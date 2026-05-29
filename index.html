@@ -61,7 +61,7 @@
     transform: scale(0.95);
   }
   
-  /* ▼ ここからテキストボックス周りのデザイン ▼ */
+  /* ▼ テキストボックス周りのデザイン ▼ */
   .settings-area {
     margin-top: 40px;
     width: 100%;
@@ -105,8 +105,10 @@
 </head>
 <body>
 
+  <!-- タイトルを「スペシャルルーレット」から「ルーレット」に変更しました -->
   <h1>ルーレット</h1>
 
+  <!-- ルーレット本体 -->
   <div class="roulette-container">
     <div class="pointer"></div>
     <canvas id="wheel" width="600" height="600"></canvas>
@@ -114,8 +116,10 @@
 
   <button id="spinBtn" class="spin">スタート！</button>
 
+  <!-- テキスト入力エリア -->
   <div class="settings-area">
-    <p>項目を入力（改行で区切る）
+    <p>項目を入力（改行で区切る）</p>
+    <textarea id="itemInput">
 1番目の人
 2番目の人
 3番目の人
@@ -131,24 +135,20 @@
     const itemInput = document.getElementById('itemInput');
     
     let items = [];
-    const TARGET_INDEX = 1; // 上から2番目（0から数えるので1）
+    const TARGET_INDEX = 1; // 上から2番目（0から数えるので1）が当たる設定
     const colors = ["#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93", "#f4a261", "#2a9d8f", "#e76f51"];
     let currentRotation = 0;
     let isSpinning = false;
 
-    // テキストボックスから項目を読み込んでルーレットを描画する関数
     function updateWheel() {
-      // 改行で分割し、空行を削除する
       const text = itemInput.value;
       items = text.split('\n').filter(item => item.trim() !== '');
 
-      // 項目が2つ未満の場合はエラーを出す
       if (items.length < 2) {
-        alert("エラー：最低でも2つ以上の項目を入力してください！\n（2番目が当たる仕組みのため）");
+        alert("エラー：最低でも2つ以上の項目を入力してください。");
         return;
       }
 
-      // ルーレットの描画
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const numItems = items.length;
       const sliceAngle = (Math.PI * 2) / numItems;
@@ -176,21 +176,18 @@
       }
     }
 
-    // 最初の一回を描画
     updateWheel();
 
-    // 更新ボタンを押したときの処理
     document.getElementById('updateBtn').addEventListener('click', () => {
       if (!isSpinning) {
         updateWheel();
       }
     });
 
-    // スタートボタンを押したときの処理
     document.getElementById('spinBtn').addEventListener('click', () => {
       if (isSpinning) return;
       if (items.length < 2) {
-        alert("項目が足りません！");
+        alert("項目が足りません。");
         return;
       }
       isSpinning = true;

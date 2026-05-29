@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学園祭ルーレット</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f7f7f7;
+    margin: 0;
+    padding: 30px 10px;
+  }
+  h1 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  .roulette-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
+  }
+  .pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 40px solid #ff3b30;
+    z-index: 10;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
+  }
+  button.spin {
+    margin-top: 30px;
+    padding: 15px 50px;
+    font-size: 22px;
+    cursor: pointer;
+    background-color: #ff3b30;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
+    transition: transform 0.1s;
+  }
+  button.spin:active {
+    transform: scale(0.95);
+  }
+  
+  /* ▼ ここからテキストボックス周りのデザイン ▼ */
+  .settings-area {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 320px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+  }
+  .settings-area p {
+    margin: 0 0 10px 0;
+    font-weight: bold;
+    color: #555;
+    font-size: 14px;
+  }
+  textarea {
+    width: 100%;
+    height: 120px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    resize: none;
+    line-height: 1.5;
+  }
+  button.update {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #34c759;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+  <h1>スペシャルルーレット</h1>
+
+  <div class="roulette-container">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="600" height="600"></canvas>
+  </div>
+
+  <button id="spinBtn" class="spin">スタート！</button>
+
+  <div class="settings-area">
+    <p>項目を入力（改行で区切る）<br><span style="color:red; font-size:12px;">※上から2行目が必ず当たります</span></p>
+    <textarea id="itemInput">
+1番目の人
+2番目の人 (絶対当たる)
+3番目の人
+4番目の人
+5番目の人
+6番目の人</textarea>
+    <button id="updateBtn" class="update">ルーレットを更新</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const itemInput = document.getElementById('itemInput');
+    
+    let items = [];
+    const TARGET_INDEX = 1; // 上から2番目（0から数えるので1）
+    const colors = ["#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93", "#f4a261", "#2a9d8f", "#e76f51"];
+    let currentRotation = 0;
+    let isSpinning = false;
+
+    // テキストボックスから項目を読み込んでルーレットを描画する関数
+    function updateWheel() {
+      // 改行で分割し、空行を削除する
+      const text = itemInput.value;
+      items = text.split('\n').filter(item => item.trim() !== '');
+
+      // 項目が2つ未満の場合はエラーを出す
+      if (items.length < 2) {
+        alert("エラー：最低でも2つ以上の項目を入力してください！\n（2番目が当たる仕組みのため）");
+        return;
+      }
+
+      // ルーレットの描画
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const numItems = items.length;
+      const sliceAngle = (Math.PI * 2) / numItems;
+      const center = 300;
+
+      for (let i = 0; i < numItems; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, center, i * sliceAngle, (i + 1) * sliceAngle);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(i * sliceAngle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 32px sans-serif";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#000000";
+        ctx.strokeText(items[i], center - 40, 10);
+        ctx.fillText(items[i], center - 40, 10);
+        ctx.restore();
+      }
+    }
+
+    // 最初の一回を描画
+    updateWheel();
+
+    // 更新ボタンを押したときの処理
+    document.getElementById('updateBtn').addEventListener('click', () => {
+      if (!isSpinning) {
+        updateWheel();
+      }
+    });
+
+    // スタートボタンを押したときの処理
+    document.getElementById('spinBtn').addEventListener('click', () => {
+      if (isSpinning) return;
+      if (items.length < 2) {
+        alert("項目が足りません！");
+        return;
+      }
+      isSpinning = true;
+
+      const numItems = items.length;
+      const sliceDeg = 360 / numItems;
+      const targetCenterDeg = (TARGET_INDEX * sliceDeg) + (sliceDeg / 2);
+
+      let targetMod = (270 - targetCenterDeg) % 360;
+      if (targetMod < 0) targetMod += 360;
+
+      const randomWobble = (Math.random() - 0.5) * (sliceDeg * 0.7);
+      const rotateBy = (360 * 5) + ((targetMod - (currentRotation % 360) + 360) % 360) + randomWobble;
+
+      currentRotation += rotateBy;
+      canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+      setTimeout(() => {
+        isSpinning = false;
+      }, 4200); 
+    });
+  </script>
+</body>
+</html>
